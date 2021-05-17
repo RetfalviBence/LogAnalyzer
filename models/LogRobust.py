@@ -11,8 +11,8 @@ from torch.optim.lr_scheduler import ReduceLROnPlateau
 from sklearn.utils import shuffle
 
 class LOG_ROBUST(nn.Module):
-    # Log Robust implementation
-
+    """ Log Robust implementation """
+ 
     def __init__(self, input_dim, hidden_dim, batch_size, device=torch.device("cpu"), loss_weights=torch.tensor([0.5, 0.5]), num_layers=1, with_attention=True):
         super(LOG_ROBUST, self).__init__()
         self.input_dim = input_dim
@@ -94,24 +94,24 @@ class LOG_ROBUST(nn.Module):
         print("Epoch [{}], val_loss: {:.4f}, val_acc: {:.4f}".format(epoch, result['val_loss'], result['val_acc']))
         
     def fit(self, epochs, lr, train_loader, val_loader, opt_func=torch.optim.Adam):
-    """Train the model using gradient descent"""
-    history = []
-    optimizer = opt_func(self.parameters(), lr)
-    for epoch in range(epochs):
+        """Train the model using gradient descent"""
+        history = []
+        optimizer = opt_func(self.parameters(), lr)
+        for epoch in range(epochs):
     
-        # Training Phase 
-        for batch in train_loader:
-            loss = self.training_step(batch)
-            loss.backward()
-            optimizer.step()
-            optimizer.zero_grad()
+            # Training Phase 
+            for batch in train_loader:
+                loss = self.training_step(batch)
+                loss.backward()
+                optimizer.step()
+                optimizer.zero_grad()
             
-        # Validation phase
-        result = evaluate(self, val_loader)
-        self.epoch_end(epoch, result)
-        history.append(result)
+            # Validation phase
+            result = evaluate(self, val_loader)
+            self.epoch_end(epoch, result)
+            history.append(result)
         
-    return history
+        return history
     
     def evaluate(self, val_loader):
         """Evaluate the model's performance on the validation set"""
