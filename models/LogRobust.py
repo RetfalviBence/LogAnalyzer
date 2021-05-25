@@ -2,6 +2,8 @@ import torch
 import torch.nn as nn
 import torch.nn.functional as F
 
+from LogAnalyzer.utils.HelperFunctions import accuracy
+
 class LOG_ROBUST(nn.Module):
     """ Log Robust implementation """
  
@@ -139,8 +141,3 @@ class LOG_ROBUST(nn.Module):
         out = self.forward(logEmbeddings, lengths)
 
         return out.detach().numpy()
-
-# helper functions
-def accuracy(outputs, labels):
-    _, preds = torch.max(outputs, dim=1)
-    return torch.tensor(torch.sum(preds == labels).item() / len(preds))
