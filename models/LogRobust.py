@@ -1,14 +1,6 @@
-import numpy as np
-import pandas as pd
 import torch
 import torch.nn as nn
-from torch.utils.data import TensorDataset
-from torch.utils.data import Dataset, DataLoader
 import torch.nn.functional as F
-from torch.utils.data import random_split
-from sklearn import preprocessing
-from torch.optim.lr_scheduler import ReduceLROnPlateau
-from sklearn.utils import shuffle
 
 class LOG_ROBUST(nn.Module):
     """ Log Robust implementation """
@@ -92,6 +84,11 @@ class LOG_ROBUST(nn.Module):
 
     def epoch_end(self, epoch, result):
         print("Epoch [{}], val_loss: {:.4f}, val_acc: {:.4f}".format(epoch, result['val_loss'], result['val_acc']))
+    
+    def evaluate(self, val_loader):
+        """Evaluate the model's performance on the validation set"""
+        outputs = [self.validation_step(batch) for batch in val_loader]
+        return self.validation_epoch_end(outputs)
         
     def fit(self, epochs, lr, train_loader, val_loader, opt_func=torch.optim.Adam):
         """Train the model using gradient descent"""
@@ -107,16 +104,12 @@ class LOG_ROBUST(nn.Module):
                 optimizer.zero_grad()
             
             # Validation phase
-            result = evaluate(self, val_loader)
+            result = self.evaluate(val_loader)
             self.epoch_end(epoch, result)
             history.append(result)
         
         return history
     
-    def evaluate(self, val_loader):
-        """Evaluate the model's performance on the validation set"""
-        outputs = [self.validation_step(batch) for batch in val_loader]
-        return self.validation_epoch_end(outputs)
     
     def pred(self, dataSet, th=0.5):
         # TODO: create a more robust solution

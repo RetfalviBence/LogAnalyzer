@@ -81,18 +81,18 @@ class LstmAutoencoder(nn.Module):
         outputs = [self.validation_step(batch) for batch in val_loader]
         return self.validation_epoch_end(outputs)
         
-    def fit(self, epochs, lr, train_loader, val_loader, opt_func=torch.optim.SGD, lossFunction=F.mse_loss):
+    def fit(self, epochs, lr, train_loader, val_loader, opt_func=torch.optim.SGD, criterion=F.mse_loss):
         """Train the model using gradient descent"""
         history = []
         optimizer = opt_func(self.parameters(), lr)
         for epoch in range(epochs):
             for batch in train_loader:
-                loss = self.step(batch, lossFunction)
+                loss = self.step(batch, criterion)
                 loss.backward()
                 optimizer.step()
                 optimizer.zero_grad()
         
-            val_history = [self.step(batch, lossFunction) for batch in val_loader]
+            val_history = [self.step(batch, criterion) for batch in val_loader]
             val_loss = torch.stack(val_history).mean()
             print("Epoch [{}], val_loss: {:.4f}".format(epoch, val_loss))
             history.append(val_loss.detach().cpu().numpy())
@@ -100,19 +100,15 @@ class LstmAutoencoder(nn.Module):
     
     def predict(self, dataset, criterion=nn.L1Loss):
         """ Return with predictions for input vectors, and losses of predictions """
-        predictions, losses = [], []
+        losses = []
         with torch.no_grad():
-            model = self.eval()
             for seq_true in dataset:
-                seq_true = torch.reshape(seq_true, (1,-1,100))
-                seq_pred = model(seq_true)
-                loss = criterion(seq_pred, seq_true)
-                predictions.append(seq_pred.numpy().flatten())
+                loss = self.step(seq_true, criterion)
                 losses.append(loss.item())
-        return predictions, losses
+        return losses
         
     def predictLabels(self, dataset, treshold, criterion=nn.L1Loss):
         """ return with the predicted label, for all data inistances """
-        predictions, losses = self.predict(dataset, criterion)
+        losses = self.predict(dataset, criterion)
         model_prediction = np.array([x > treshold for x in losses])
         return model_prediction.astype(int)

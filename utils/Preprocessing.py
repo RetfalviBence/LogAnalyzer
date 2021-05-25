@@ -14,6 +14,9 @@ class LogDataset(Dataset):
         self.lengths = torch.tensor([x.size(0) for x in data])
         self.device = device
 
+    def getTarget(self):
+        return self.target.to(self.device)
+
     def __len__(self):
         return self.data.size(0)
 
@@ -22,7 +25,7 @@ class LogDataset(Dataset):
 
 
 
-def preprocessData(data, label, val_anomaly_samples, val_normal_samples, train_anomaly_samples, train_nomral_samples, val_device="cpu", train_device="cpu"):
+def preprocessData(data, label, val_anomaly_samples, val_normal_samples, train_anomaly_samples, train_nomral_samples, batch_size, val_device=torch.device("cpu"), train_device=torch.device("cpu")):
     # data pereprocess
     lb = preprocessing.LabelBinarizer()
     
@@ -81,7 +84,7 @@ def preprocessData(data, label, val_anomaly_samples, val_normal_samples, train_a
 
     data_set_train = LogDataset(train_datanp, train_target, train_device)
     data_set_val = LogDataset(val_datanp, val_target, val_device)
-    train_loader = DataLoader(data_set_train, 1, shuffle=True)
-    val_loader = DataLoader(data_set_val, val_data, 1)
+    #train_loader = DataLoader(data_set_train, batch_size, shuffle=True)
+    #val_loader = DataLoader(data_set_val, 1)
 
-    return val_loader, train_loader
+    return data_set_train, data_set_val
