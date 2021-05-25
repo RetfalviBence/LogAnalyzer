@@ -1,17 +1,7 @@
-#import time
 import numpy as np
-import pandas as pd
 import torch
-import copy
 import torch.nn as nn
-from torch.utils.data import TensorDataset
-from torch.utils.data import Dataset, DataLoader
 import torch.nn.functional as F
-from sklearn.model_selection import KFold
-from sklearn.utils import shuffle
-
-
-# functionality, 1 linear layer, zero linear layer
 
 class Encoder(nn.Module):
     """ Encoder part of the autoencoder """
@@ -105,8 +95,8 @@ class LstmAutoencoder(nn.Module):
             val_history = [self.step(batch, lossFunction) for batch in val_loader]
             val_loss = torch.stack(val_history).mean()
             print("Epoch [{}], val_loss: {:.4f}".format(epoch, val_loss))
-            history.append(val_loss)
-    return history
+            history.append(val_loss.detach().cpu().numpy())
+        return history
     
     def predict(self, dataset, criterion=nn.L1Loss):
         """ Return with predictions for input vectors, and losses of predictions """

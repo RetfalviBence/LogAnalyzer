@@ -131,7 +131,7 @@ class LOG_ROBUST(nn.Module):
     
         for value in values:
             if value > th:
-            preds.append(1)
+                preds.append(1)
         else:
             preds.append(0)
         
