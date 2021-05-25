@@ -15,13 +15,13 @@ class LogDataset(Dataset):
         self.device = device
 
     def getTarget(self):
-        return self.target.to(self.device)
+        return self.target
 
     def __len__(self):
         return self.data.size(0)
 
     def __getitem__(self, idx):
-        return self.data[idx].to(self.device), self.lengths[idx], self.target[idx].to(self.device)
+        return self.data[idx].to(self.device), self.lengths[idx], self.target[idx]
 
 
 
@@ -65,6 +65,7 @@ def preprocessData(data, label, val_anomaly_samples, val_normal_samples, train_a
     
     # select anomalies for train
     train_data_anomaly = np.array([])
+    train_target_anomaly = np.array([])
     if train_anomaly_samples > 0:
         train_data_anomaly = anomaly[val_anomaly_samples:(val_anomaly_samples+train_anomaly_samples)]
         train_target_anomaly = np.ones((train_anomaly_samples,1), dtype= np.int64)

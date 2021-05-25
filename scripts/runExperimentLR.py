@@ -5,12 +5,12 @@ import torch.nn.functional as F
 from torch.utils.data import random_split
 from sklearn.metrics import roc_curve
 import seaborn as sns; sns.set_theme()
+import os
 
 from LogAnalyzer.models.LogRobust import LOG_ROBUST
 from LogAnalyzer.utils.Preprocessing import preprocessData
-from LogAnalyzer.utils.HelperFunctions import getDevice, getBestCut, confusion_matrix
+from LogAnalyzer.utils.HelperFunctions import getDevice, getBestCut, confusion_matrix, saveDict
 from LogAnalyzer.utils.Plots import roc_curve_plot
-import pickle
 
 # batch size not available yet TODO: solve it
 PARAMS = {
@@ -28,10 +28,12 @@ EXPERIMENT_ID = "005" + "LR"
 DATA = "../data/logdata.npy"
 TARGET = "../data/loglabel.npy"
 GPU_CARD = 0
+experimentPath = "./experiments/" + EXPERIMENT_ID
 
-file = open('../experiments/' + EXPERIMENT_ID + 'PARAMS.pkl')
-pickle.dump(PARAMS, file)
-file.close()
+if not os.path.isdir(experimentPath):
+    os.mkdir(experimentPath)
+
+saveDict(PARAMS, experimentPath+'/PARAMS.pkl')
 
 X = np.load(DATA, allow_pickle=True)
 Y = np.load(TARGET, allow_pickle=True)
@@ -64,14 +66,15 @@ history = model.fit(
                     )
 
 #SAVING TODO: save just weights, not the models
-torch.save(model, '../experiments/' + EXPERIMENT_ID + '/model.pt')
+np.save(experimentPath + '/learningHistory', history)
+torch.save(model, experimentPath + '/model.pt')
     
 # Validation
 model.cpu()
 probas, labels = model.pred_probas(val_data)
 
 fpr, tpr, thresholds = roc_curve(labels, probas[:,1], pos_label=1)
-roc_curve_plot(fpr, tpr, savePath='../experiments/' + EXPERIMENT_ID + '/ROCCurve.png')
+roc_curve_plot(fpr, tpr, savePath=experimentPath + '/ROCCurve.png')
 
 best_treshold = getBestCut(tpr, fpr, thresholds)
 modelPred, labels = model.pred(val_data, best_treshold)
@@ -89,7 +92,7 @@ confmatrix_plot = sns.heatmap(
                                 fmt="g"
                                 )
 
-confmatrix_plot.savefig('../experiments/' + EXPERIMENT_ID + 'confmatrix.png')
+confmatrix_plot.savefig(experimentPath + '/confmatrix.png')
 
 accuracy = (cm[0,0].item() + cm[1,1].item())/ (cm[0,0].item() + cm[1,1].item() + cm[0,1].item() + cm[1,0].item())
 specificity = cm[0,0].item()/( cm[1,0].item() + cm[0,0].item())
@@ -101,6 +104,4 @@ metrics = {
             "Specificity": specificity,
             }
 
-file = open('../experiments/' + EXPERIMENT_ID + 'Scores.pkl')
-pickle.dump(metrics, file)
-file.close()
+saveDict(metrics, experimentPath + '/Scores.pkl')

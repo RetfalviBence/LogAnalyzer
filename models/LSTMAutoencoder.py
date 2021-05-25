@@ -8,7 +8,7 @@ class Encoder(nn.Module):
     def __init__(self, input_dim, lstm_hidden_dim, encoder_out_dim=None, batch_size=1, num_layers=1):
         super(Encoder, self).__init__()
         self.input_dim = input_dim
-        self.lstm_hidden_dim = lstm_hidden_dim
+        self.hidden_dim = lstm_hidden_dim
         self.encoder_out_dim = encoder_out_dim # dimension of the embedding created by the encoder, if use extra linear layer
         self.batch_size = batch_size
         self.num_layers = num_layers
@@ -40,10 +40,13 @@ class Decoder(nn.Module):
         self.num_layers = num_layers
         
         # Define LSTM layer
+        print(self.input_dim)
+        print(self.lstm_hidden_dim)
+        print(self.num_layers)
         self.encode_lstm = nn.LSTM(self.input_dim, self.lstm_hidden_dim, self.num_layers, batch_first=True)
         
         # Linear layer to create predictions
-        self.predictor = nn.Linear(self.decoder_hidden_dim, self.reconstruction_dim, bias=True)
+        self.predictor = nn.Linear(self.lstm_hidden_dim, self.reconstruction_dim, bias=True)
         
     def forward(self, inputs, seq_len):
         """ Create rekonsturction vectors """
@@ -61,8 +64,13 @@ class LstmAutoencoder(nn.Module):
     def __init__(self, input_dim, encoder_hidden_dim, decoder_hidden_dim, encoder_out_dim=None, batch_size=1, num_layers=1):
         super(LstmAutoencoder, self).__init__()
         
+        if encoder_out_dim is not None:
+            encoder_out_true = encoder_out_dim
+        else:
+            encoder_out_true = encoder_hidden_dim
+
         self.encoder = Encoder(input_dim, encoder_hidden_dim, encoder_out_dim, batch_size, num_layers)
-        self.decoder = Decoder(encoder_out_dim, decoder_hidden_dim, input_dim, batch_size)
+        self.decoder = Decoder(encoder_out_true, decoder_hidden_dim, input_dim, batch_size)
         
     def forward(self, inputs):
         seq_len = inputs.shape[1]
@@ -71,19 +79,17 @@ class LstmAutoencoder(nn.Module):
         return decoded_input
         
     def step(self, batch, lossFunction):
-        inputs, labels = batch
+        inputs, length, label = batch
         out = self(inputs)
+        print(out.size())
+        print(inputs.size())
         loss = lossFunction(out, inputs)
         return loss
-        
-    def evaluate(self, val_loader):
-        """Evaluate the model's performance on the validation set"""
-        outputs = [self.validation_step(batch) for batch in val_loader]
-        return self.validation_epoch_end(outputs)
         
     def fit(self, epochs, lr, train_loader, val_loader, opt_func=torch.optim.SGD, criterion=F.mse_loss):
         """Train the model using gradient descent"""
         history = []
+        val_history = []
         optimizer = opt_func(self.parameters(), lr)
         for epoch in range(epochs):
             for batch in train_loader:
@@ -98,7 +104,7 @@ class LstmAutoencoder(nn.Module):
             history.append(val_loss.detach().cpu().numpy())
         return history
     
-    def predict(self, dataset, criterion=nn.L1Loss):
+    def predict(self, dataset, criterion=F.mse_loss):
         """ Return with predictions for input vectors, and losses of predictions """
         losses = []
         with torch.no_grad():
@@ -107,7 +113,7 @@ class LstmAutoencoder(nn.Module):
                 losses.append(loss.item())
         return losses
         
-    def predictLabels(self, dataset, treshold, criterion=nn.L1Loss):
+    def predictLabels(self, dataset, treshold, criterion=F.mse_loss):
         """ return with the predicted label, for all data inistances """
         losses = self.predict(dataset, criterion)
         model_prediction = np.array([x > treshold for x in losses])

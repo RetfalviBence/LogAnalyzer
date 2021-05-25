@@ -5,39 +5,45 @@ import torch.nn.functional as F
 from torch.utils.data import random_split
 from sklearn.metrics import roc_curve
 import seaborn as sns; sns.set_theme()
+import os
 
 from LogAnalyzer.models.LSTMAutoencoder import LstmAutoencoder
 from LogAnalyzer.utils.Preprocessing import preprocessData
-from LogAnalyzer.utils.HelperFunctions import getDevice, getBestCut, confusion_matrix
+from LogAnalyzer.utils.HelperFunctions import getDevice, getBestCut, confusion_matrix, saveDict
 from LogAnalyzer.utils.Plots import roc_curve_plot
 import pickle
 
 # batch size not available yet TODO: solve it
+
+print("script start ...")
 PARAMS = {
-    'epochs': 20,
+    'epochs': 1,
     'learning_rate': 0.0003,
     'loss_function': F.mse_loss,
     'opt_func': torch.optim.Adam,
     'train_anomaly_samples':0,
-    'train_normal_samples': 100000,
-    'val_anomaly_samples': 10000,
-    'val_normal_samples': 10000,
+    'train_normal_samples': 100,
+    'val_anomaly_samples': 100,
+    'val_normal_samples': 100,
     'decoder_hidden_dim': 150,
-    'encoder_hiddem_dim:': 150,
+    'encoder_hidden_dim': 150,
     'encoder_out_dim': None,
     'batch_size': 1,
 }
 EXPERIMENT_ID = "005" + "AE"
-DATA = "../data/logdata.npy"
-TARGET = "../data/loglabel.npy"
+DATA = "./data/logdata.npy"
+TARGET = "./data/loglabel.npy"
 GPU_CARD = 0
+experimentPath = "./experiments/" + EXPERIMENT_ID
 
-file = open('../experiments/' + EXPERIMENT_ID + 'PARAMS.pkl')
-pickle.dump(PARAMS, file)
-file.close()
+if not os.path.isdir(experimentPath):
+    os.mkdir(experimentPath)
+
+saveDict(PARAMS, experimentPath + '/PARAMS.pkl')
 
 X = np.load(DATA, allow_pickle=True)
 Y = np.load(TARGET, allow_pickle=True)
+print("data loaded")
 
 device = getDevice(GPU_CARD)
 
@@ -52,16 +58,18 @@ train_data, val_data = preprocessData(
                                         train_device=device
                                         ) 
 
-train_data, epoch_val_data = random_split(train_data,  [90000, 10000])
+train_data, epoch_val_data = random_split(train_data,  [90, 10])
 train_loader = DataLoader(train_data, 1, shuffle=True)
 epoch_val_loader = DataLoader(epoch_val_data, 1)
 
 val_loader = DataLoader(val_data, 1)
 val_target = val_data.getTarget()
+print("data preprocessed.")
 
 model = LstmAutoencoder( 100, PARAMS['encoder_hidden_dim'], PARAMS['decoder_hidden_dim'])
 model.to(device)
 
+print("start training")
 history = model.fit(
                     PARAMS['epochs'],
                     PARAMS['learning_rate'],
@@ -70,15 +78,17 @@ history = model.fit(
                     opt_func=PARAMS['opt_func']
                     )
 
+print("finish training")
 #SAVING TODO: save just weights, not the models
-torch.save(model, '../experiments/' + EXPERIMENT_ID + '/model.pt')
+np.save(experimentPath + '/learningHistory', history)
+torch.save(model, experimentPath + '/model.pt')
     
 # Validation
 model.cpu()
 losses = model.predict(val_loader)
 
 fpr, tpr, thresholds = roc_curve(val_target, losses, pos_label=1)
-roc_curve_plot(fpr, tpr, savePath='../experiments/' + EXPERIMENT_ID + '/ROCCurve.png')
+roc_curve_plot(fpr, tpr, savePath=experimentPath + '/ROCCurve.png')
 
 best_treshold = getBestCut(tpr, fpr, thresholds)
 modelPred = model.predictLabels(val_loader, best_treshold)
@@ -95,7 +105,7 @@ confmatrix_plot = sns.heatmap(
                                 fmt="g"
                                 )
 
-confmatrix_plot.savefig('../experiments/' + EXPERIMENT_ID + 'confmatrix.png')
+confmatrix_plot.get_figure().savefig(experimentPath + '/confmatrix.png')
 
 accuracy = (cm[0,0].item() + cm[1,1].item())/ (cm[0,0].item() + cm[1,1].item() + cm[0,1].item() + cm[1,0].item())
 specificity = cm[0,0].item()/( cm[1,0].item() + cm[0,0].item())
@@ -107,8 +117,6 @@ metrics = {
             "Specificity": specificity,
             }
 
-file = open('../experiments/' + EXPERIMENT_ID + 'Scores.pkl')
-pickle.dump(metrics, file)
-file.close()
+saveDict(metrics, experimentPath + '/Scores.pkl', 'wb')
 
 # TODO: create plots for compare loss between anomaly, and normal data.

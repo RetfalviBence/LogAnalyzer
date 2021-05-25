@@ -1,5 +1,6 @@
 import torch
 import numpy as np
+import pickle
 
 def accuracy(outputs, labels):
     _, preds = torch.max(outputs, dim=1)
@@ -7,7 +8,7 @@ def accuracy(outputs, labels):
 
 def getDevice(gpu_num):
     if torch.cuda.is_available():  
-        dev = "cuda:" + gpu_num
+        dev = "cuda:" + str(gpu_num)
     else:  
         dev = "cpu"  
     return torch.device(dev)
@@ -26,3 +27,8 @@ def confusion_matrix(preds, labels):
     for pred, label in zip(preds, labels):
         matrix[pred, label] +=1
     return matrix
+
+def saveDict(dict, filePath):
+    file = open(filePath, 'wb')
+    pickle.dump(dict, file)
+    file.close()
