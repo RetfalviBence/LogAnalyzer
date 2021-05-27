@@ -11,7 +11,6 @@ from LogAnalyzer.models.LSTMAutoencoder import LstmAutoencoder
 from LogAnalyzer.utils.Preprocessing import preprocessData
 from LogAnalyzer.utils.HelperFunctions import getDevice, getBestCut, confusion_matrix, saveDict
 from LogAnalyzer.utils.Plots import roc_curve_plot
-import pickle
 
 # batch size not available yet TODO: solve it
 
@@ -31,10 +30,10 @@ PARAMS = {
     'batch_size': 1,
 }
 EXPERIMENT_ID = "005" + "AE"
-DATA = "./data/logdata.npy"
-TARGET = "./data/loglabel.npy"
+DATA = "LogAnalyzer/data/logdata.npy"
+TARGET = "LogAnalyzer/data/loglabel.npy"
 GPU_CARD = 0
-experimentPath = "./experiments/" + EXPERIMENT_ID
+experimentPath = "LogAnalyzer/experiments/" + EXPERIMENT_ID
 
 if not os.path.isdir(experimentPath):
     os.mkdir(experimentPath)
@@ -117,6 +116,6 @@ metrics = {
             "Specificity": specificity,
             }
 
-saveDict(metrics, experimentPath + '/Scores.pkl', 'wb')
+saveDict(metrics, experimentPath + '/Scores.pkl')
 
 # TODO: create plots for compare loss between anomaly, and normal data.

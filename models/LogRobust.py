@@ -1,4 +1,5 @@
 import torch
+from torch._C import device
 import torch.nn as nn
 import torch.nn.functional as F
 
@@ -15,6 +16,7 @@ class LOG_ROBUST(nn.Module):
         self.num_layers = num_layers
         self.loss_weights = loss_weights.to(device)
         self.with_attention= with_attention
+        self.device = device
 
         # Define the LSTM layer
         self.lstm = nn.LSTM(self.input_dim, self.hidden_dim, self.num_layers, batch_first=True, bidirectional=True)
@@ -60,15 +62,16 @@ class LOG_ROBUST(nn.Module):
     def training_step(self, batch):
         logEmbeddings, lengths, labels = batch
         out = self(logEmbeddings, lengths)
-        loss = F.cross_entropy(out, labels, self.loss_weights)
+        loss = F.cross_entropy(out, labels.to(self.device), self.loss_weights)
 
         return loss
 
+    ## TODO: handle to device in data loader
     def validation_step(self, batch):
         logEmbeddings, lengths, labels = batch
         out = self(logEmbeddings, lengths)
-        loss = F.cross_entropy(out, labels, self.loss_weights)
-        acc = accuracy(out, labels)
+        loss = F.cross_entropy(out, labels.to(self.device), self.loss_weights)
+        acc = accuracy(out, labels.to(self.device))
         return {'val_loss':loss, 'val_acc':acc}
     
     def prediction_step(self, batch):
@@ -116,28 +119,28 @@ class LOG_ROBUST(nn.Module):
     def pred(self, dataSet, th=0.5):
         # TODO: create a more robust solution
         # return with the prediction value 1 or 0
-        logEmbeddings = dataSet.dataset.data[dataSet.indices]
-        lengths = dataSet.dataset.lengths[dataSet.indices]
-        labels = dataSet.dataset.target[dataSet.indices]
+        logEmbeddings = dataSet.data
+        lengths = dataSet.lengths
+        labels = dataSet.target
    
         out = self.forward(logEmbeddings, lengths)
         values = out[:, 1]
         preds = []
-    
+        
         for value in values:
             if value > th:
                 preds.append(1)
-        else:
-            preds.append(0)
+            else:
+                preds.append(0)
         
         return torch.tensor(preds), labels
     
     def pred_probas(self, dataSet):
         # return with the probalities of the 2 label, anomaly or not
-        logEmbeddings = dataSet.dataset.data[dataSet.indices]
-        lengths = dataSet.dataset.lengths[dataSet.indices]
-        labels = dataSet.dataset.target[dataSet.indices]
+        logEmbeddings = dataSet.data
+        lengths = dataSet.lengths
+        labels = dataSet.target
 
         out = self.forward(logEmbeddings, lengths)
 
-        return out.detach().numpy()
+        return out.detach().numpy(), labels

@@ -81,8 +81,6 @@ class LstmAutoencoder(nn.Module):
     def step(self, batch, lossFunction):
         inputs, length, label = batch
         out = self(inputs)
-        print(out.size())
-        print(inputs.size())
         loss = lossFunction(out, inputs)
         return loss
         
