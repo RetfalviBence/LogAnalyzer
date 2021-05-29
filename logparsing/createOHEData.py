@@ -1,12 +1,20 @@
 import pandas as pd
 import numpy as np
 
-print("start")
-BLOCK_LABEL = pd.read_csv('anomaly_label.csv')
-EVENT_LOG = pd.read_csv('EVENTID_LOGID.csv')
-LOG_BLOCK = pd.read_csv('LOGID_BLOCK.csv')
+"""
+Script for create one hot encoded form of log messages from preprocessed drain output .cs files, and HDFS anomaly labels
+TODO: change keras Tokenizer, to selfmade, or pytorch implementation
+"""
 
-eventFile = open('logTemplates.txt', 'r')
+
+print("start")
+BLOCK_LABEL = "" # labels
+EVENT_LOG =  "" #event_log .csv
+LOG_BLOCK = "" #log_block .csv
+EVENT_TEMPLATE = "" # preprocessed events from drain (IMPORTANT to rewrite all log message word to interpretable english word)
+OUTPUTPATH = "" # path folder for output data (logdata.npy, loglabel.npy files will be created there)
+
+eventFile = open(EVENT_TEMPLATE, 'r')
 Lines = eventFile.readlines()
 eventList = []
 for line in Lines:
@@ -38,6 +46,6 @@ for blckId, label in zip(BLOCK_LABEL['BlockId'],BLOCK_LABEL['Label']):
     x.append(actBlockEmbedding)
 
 a = np.asarray(x)
-np.save("logdataOHE.npy", a)
+np.save(OUTPUTPATH + "logdataOHE.npy", a)
 b = np.asarray(y)
-np.save("loglabelOHE.npy", b)
+np.save(OUTPUTPATH + "loglabelOHE.npy", b)

@@ -3,7 +3,12 @@ import math
 import pandas as pd
 import numpy as np
 from keras.preprocessing.text import Tokenizer
-from keras.preprocessing.sequence import pad_sequences
+
+"""
+Script for create semmantic vektorized form of log messages from preprocessed drain output .cs files, and HDFS anomaly labels
+TODO: change keras Tokenizer, to selfmade, or pytorch implementation
+"""
+
 
 # helper functions
 print('script start')
@@ -17,14 +22,17 @@ def eventToVector(event, tokenEmbeddings, wordWeights):
     aggregatedVector = sum(vectorList)/len(event)
     return aggregatedVector
 
-BLOCK_LABEL = pd.read_csv('anomaly_label.csv')
-EVENT_LOG = pd.read_csv('EVENTID_LOGID.csv')
-LOG_BLOCK = pd.read_csv('LOGID_BLOCK.csv')
+BLOCK_LABEL = "" # labels
+EVENT_LOG =  "" #event_log .csv
+LOG_BLOCK = "" #log_block .csv
+EVENT_TEMPLATE = "" # preprocessed events from drain (IMPORTANT to rewrite all log message word to interpretable english word)
+EMBEDDING = "" # precreated log embedding for english words (for example pretrained w2vec, glove) GloVe : https://nlp.stanford.edu/projects/glove/
+OUTPUTPATH = "" # path folder for output data (logdata.npy, loglabel.npy files will be created there)
 
 # Create word embeddings
 
 # read preprocessed log events
-eventFile = open('logTemplates.txt', 'r')
+eventFile = open(EVENT_TEMPLATE, 'r')
 Lines = eventFile.readlines()
 eventList = []
 for line in Lines:
@@ -38,7 +46,7 @@ tokenizer.texts_to_sequences_generator(sequences)
 
 # read pretrained glove word embeddings
 wordEmbeddings = dict()
-gloveFile = open('glove.6B.100d.txt', encoding="utf8")
+gloveFile = open(EMBEDDING, encoding="utf8")
 
 for line in gloveFile:
     values = line.split()
@@ -108,6 +116,6 @@ for blckId, label in zip(BLOCK_LABEL['BlockId'],BLOCK_LABEL['Label']):
     x.append(actBlockEmbedding)
 
 a = np.asarray(x)
-np.save("logdata.npy", a)
+np.save(OUTPUTPATH + "logdata.npy", a)
 b = np.asarray(y)
-np.save("loglabel.npy", b)
+np.save(OUTPUTPATH + "loglabel.npy", b)
