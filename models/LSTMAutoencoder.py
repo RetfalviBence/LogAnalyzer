@@ -40,9 +40,6 @@ class Decoder(nn.Module):
         self.num_layers = num_layers
         
         # Define LSTM layer
-        print(self.input_dim)
-        print(self.lstm_hidden_dim)
-        print(self.num_layers)
         self.encode_lstm = nn.LSTM(self.input_dim, self.lstm_hidden_dim, self.num_layers, batch_first=True)
         
         # Linear layer to create predictions
@@ -79,12 +76,18 @@ class LstmAutoencoder(nn.Module):
         return decoded_input
         
     def step(self, batch, lossFunction):
-        inputs, length, label = batch
-        out = self(inputs)
-        loss = lossFunction(out, inputs)
-        return loss
+        inputs, lengths, label = batch
+
+        loss = torch.tensor(0)
+        for sample, length in zip(inputs, lengths):
+          out = self(sample[0:length].unsqueeze(0))
+          loss = loss + lossFunction(out, sample[0:length].unsqueeze(0))
+
+        #out = self(inputs)
+        #loss = lossFunction(out, inputs)
+        return torch.div(loss, len(label))
         
-    def fit(self, epochs, lr, train_loader, val_loader, opt_func=torch.optim.SGD, criterion=F.mse_loss):
+    def fit(self, epochs, lr, train_loader, val_loader, opt_func = torch.optim.SGD, criterion = F.mse_loss):
         """Train the model using gradient descent"""
         history = []
         val_history = []

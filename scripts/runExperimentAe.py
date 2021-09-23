@@ -7,36 +7,39 @@ from sklearn.metrics import roc_curve
 import seaborn as sns; sns.set_theme()
 import os
 
-from LogAnalyzer.models.LSTMAutoencoder import LstmAutoencoder
-from LogAnalyzer.utils.Preprocessing import preprocessData
-from LogAnalyzer.utils.HelperFunctions import getDevice, getBestCut, confusion_matrix, saveDict
-from LogAnalyzer.utils.Plots import roc_curve_plot
+from ..models.LSTMAutoencoder import LstmAutoencoder
+from ..utils.Preprocessing import preprocessData
+from ..utils.HelperFunctions import getDevice, getBestCut, confusion_matrix, saveDict
+from ..utils.Plots import roc_curve_plot
 
 # batch size not available yet TODO: solve it
 
 print("script start ...")
 PARAMS = {
-    'epochs': 1,
-    'learning_rate': 0.0003,
+    'epochs': 5,
+    'learning_rate': 0.001,
     'loss_function': F.mse_loss,
     'opt_func': torch.optim.Adam,
     'train_anomaly_samples':0,
-    'train_normal_samples': 100,
-    'val_anomaly_samples': 100,
-    'val_normal_samples': 100,
+    'train_normal_samples': 30000,
+    'val_anomaly_samples': 5000,
+    'val_normal_samples': 5000,
     'decoder_hidden_dim': 150,
     'encoder_hidden_dim': 150,
     'encoder_out_dim': None,
-    'batch_size': 1,
+    'batch_size': 32,
 }
-EXPERIMENT_ID = "005" + "AE"
+EXPERIMENT_ID = "006" + "AE"
 DATA = "LogAnalyzer/data/logdata.npy"
 TARGET = "LogAnalyzer/data/loglabel.npy"
 GPU_CARD = 0
 experimentPath = "LogAnalyzer/experiments/" + EXPERIMENT_ID
 
+if not os.path.isdir("LogAnalyzer/experiments"):
+  os.mkdir("LogAnalyzer/experiments")
+
 if not os.path.isdir(experimentPath):
-    os.mkdir(experimentPath)
+  os.mkdir(experimentPath)
 
 saveDict(PARAMS, experimentPath + '/PARAMS.pkl')
 
@@ -45,6 +48,7 @@ Y = np.load(TARGET, allow_pickle=True)
 print("data loaded")
 
 device = getDevice(GPU_CARD)
+print("device selected : ", device)
 
 train_data, val_data = preprocessData(
                                         X,
@@ -55,11 +59,12 @@ train_data, val_data = preprocessData(
                                         PARAMS["train_normal_samples"],
                                         PARAMS['batch_size'],
                                         train_device=device
-                                        ) 
+                                      ) 
 
-train_data, epoch_val_data = random_split(train_data,  [90, 10])
-train_loader = DataLoader(train_data, 1, shuffle=True)
+train_data, epoch_val_data = random_split(train_data,  [25000, 5000])
+train_loader = DataLoader(train_data, PARAMS['batch_size'], shuffle=True)
 epoch_val_loader = DataLoader(epoch_val_data, 1)
+print("data loaded successfully")
 
 val_loader = DataLoader(val_data, 1)
 val_target = val_data.getTarget()
@@ -94,14 +99,14 @@ modelPred = model.predictLabels(val_loader, best_treshold)
 cm = confusion_matrix(modelPred, val_target)
 confmatrix_plot = sns.heatmap(  
                                 cm,
-                                robust=True,
-                                annot=True,
-                                center=5000,
-                                linewidths= 0.2,
+                                robust= True,
+                                annot= True,
+                                center= 5000,
+                                linewidths = 0.2,
                                 cmap="crest",
-                                xticklabels=["Normal", "Anomaly"],
-                                yticklabels=["Normal", "Anomaly"], 
-                                fmt="g"
+                                xticklabels =["Normal", "Anomaly"],
+                                yticklabels =["Normal", "Anomaly"], 
+                                fmt = "g"
                                 )
 
 confmatrix_plot.get_figure().savefig(experimentPath + '/confmatrix.png')

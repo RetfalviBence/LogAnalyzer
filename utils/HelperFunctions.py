@@ -25,7 +25,7 @@ def confusion_matrix(preds, labels):
     matrix = np.zeros((2,2))
 #    _, preds = torch.max(outputs, dim=1)
     for pred, label in zip(preds, labels):
-        matrix[pred, label] +=1
+        matrix[pred, label] += 1
     return matrix
 
 def saveDict(dict, filePath):

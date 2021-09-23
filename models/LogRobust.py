@@ -3,7 +3,7 @@ from torch._C import device
 import torch.nn as nn
 import torch.nn.functional as F
 
-from LogAnalyzer.utils.HelperFunctions import accuracy
+from ..utils.HelperFunctions import accuracy
 
 class LOG_ROBUST(nn.Module):
     """ Log Robust implementation """
@@ -49,9 +49,9 @@ class LOG_ROBUST(nn.Module):
             fcn_out = self.linear(unpacked_out)
             fcn_activated = self.attention_activation(fcn_out)
             # multiply data with the created weight
-            summed_state = torch.sum(fcn_activated * unpacked_out,1)
+            summed_state = torch.sum(fcn_activated * unpacked_out, 1)
         else:
-            summed_state = torch.sum(unpacked_out,1)
+            summed_state = torch.sum(unpacked_out, 1)
 
         # fcn with softmax
         fcn_softmax = self.softmaxFcn(summed_state)

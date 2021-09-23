@@ -5,10 +5,10 @@ from sklearn.metrics import roc_curve
 import seaborn as sns; sns.set_theme()
 import os
 
-from LogAnalyzer.models.LogRobust import LOG_ROBUST
-from LogAnalyzer.utils.Preprocessing import preprocessData
-from LogAnalyzer.utils.HelperFunctions import getDevice, getBestCut, confusion_matrix, saveDict
-from LogAnalyzer.utils.Plots import roc_curve_plot
+from ..models.LogRobust import LOG_ROBUST
+from ..utils.Preprocessing import preprocessData
+from ..utils.HelperFunctions import getDevice, getBestCut, confusion_matrix, saveDict
+from ..utils.Plots import roc_curve_plot
 
 PARAMS = {
     'epochs': 2,
@@ -104,6 +104,6 @@ metrics = {
             "Accuracy":accuracy,
             "Recall": recall,
             "Specificity": specificity,
-            }
+          }
 
 saveDict(metrics, experimentPath + '/Scores.pkl')
